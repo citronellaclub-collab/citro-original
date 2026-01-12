@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cultivo Virtual</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Montserrat', sans-serif;
+      background: url('fondo-cultivo-realista.jpg') no-repeat center center fixed;
+      background-size: cover;
+    }
+    .login-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: rgba(255,255,255,0.4);
+    }
+    .login-container input, .login-container button {
+      width: 250px;
+      padding: 10px;
+      font-size: 1rem;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #aaa;
+    }
+    .dashboard {
+      display: none;
+      height: 100vh;
+      width: 100%;
+      flex-direction: row;
+    }
+    .sidebar {
+      width: 100px;
+      background-color: rgba(0,0,0,0.8);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 1rem;
+      transition: width 0.3s ease;
+      overflow: hidden;
+      z-index: 2;
+    }
+    .sidebar:hover { width: 250px; }
+    .sidebar-top button, .sidebar-bottom button {
+      background-color: #aaff00;
+      border: 2px solid #ffd700;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1rem;
+      padding: 0.5rem;
+      width: 100%;
+      text-transform: uppercase;
+      color: black;
+    }
+    .sidebar span { white-space: nowrap; }
+    .sidebar:not(:hover) span { display: none; }
+    .sidebar img {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      transition: transform 0.3s ease, border-radius 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+    }
+    .sidebar img:hover {
+      transform: scale(1.2);
+      border-radius: 20px;
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5);
+      filter: brightness(1.2);
+    }
+    .main-content {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 2rem;
+      text-transform: uppercase;
+      font-weight: bold;
+    }
+    .grid-section {
+      display: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 150px;
+    }
+    .producto-boton {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 120px;
+      height: auto;
+      background: rgba(255, 255, 255, 0.85);
+      border: 2px solid #ffd700;
+      margin: 10px;
+      cursor: pointer;
+      padding: 10px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+    }
+    .producto-boton:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+    }
+    .producto-boton img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .nombre-producto {
+      font-weight: bold;
+      font-size: 0.9rem;
+      text-align: center;
+    }
+    .menu-cultivo, .menu-catalogo, .menu-carrito {
+      display: none;
+      position: fixed;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -30%);
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border: 2px solid #ffd700;
+      z-index: 10;
+      text-align: center;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .menu-catalogo input { width: 50px; text-align: center; }
+    .menu-catalogo button, .menu-cultivo button, .menu-carrito button { margin-left: 5px; }
+    #carrito {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      border: 2px solid #ffd700;
+      padding: 10px;
+      z-index: 15;
+      cursor: pointer;
+      display: none;
+    }
+    #terminos, #perfil {
+      display: none;
+      position: absolute;
+      top: 150px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.5rem;
+      background: rgba(255,255,255,0.8);
+      padding: 20px;
+      border-radius: 10px;
+    }
+    .planta-boton {
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .planta-boton img {
+      width: 80px;
+      height: auto;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .planta-boton img:hover {
+      transform: scale(1.2);
+      box-shadow: 0 4px 15px rgba(255, 215, 0, 0.5);
+    }
+
+    /* pequeñas correcciones responsive */
+    @media (max-width: 600px) {
+      .sidebar { display: none; }
+      .grid-section { margin-top: 80px; }
+      .main-content { font-size: 1.2rem; }
+    }
+  </style>
+
+<link rel="icon" type="image/png" href="icono-cultivo.png">
+</head>
+<body>
+  <div class="login-container" id="login">
+    <h2>Iniciar Sesión</h2>
+    <input type="text" placeholder="Usuario" id="username">
+    <input type="password" placeholder="Contraseña" id="password">
+    <button onclick="login()">Entrar</button>
+  </div>
+
+  <div class="dashboard" id="dashboard">
+    <div class="sidebar">
+      <div class="sidebar-top">
+        <button onclick="mostrarSeccion('catalogo')"><img src="mago-catalogo.png" alt=""><span>Catálogo</span></button>
+        <button onclick="mostrarSeccion('cultivo')"><img src="cultivo-cogollo.png" alt=""><span>Mi Cultivo</span></button>
+        <button onclick="mostrarSeccion('terminos')"><img src="icono-pergamino.png" alt=""><span>Términos</span></button>
+      </div>
+      <div class="sidebar-bottom">
+        <button onclick="mostrarSeccion('perfil')"><img src="icono-perfil.png" alt=""><span>Perfil</span></button>
+        <button onclick="logout()"><img src="icono-cerrar.png" alt=""><span>Cerrar Sesión</span></button>
+      </div>
+    </div>
+
+    <div class="main-content" id="mainText">Bienvenido al Cultivo Virtual</div>
+
+    <div id="carrito" onclick="mostrarCarrito()">Carrito: 0</div>
+    <div class="menu-carrito" id="menuCarrito"></div>
+
+    <div class="grid-section" id="catalogoGrid"></div>
+
+    <div class="grid-section" id="cultivoGrid">
+      <!-- Las plantas se insertarán aquí dinámicamente -->
+    </div>
+
+    <div id="perfil" style="display: none; position: absolute; top: 150px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 500px; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.2); font-family: 'Montserrat', sans-serif;">
+      <h2 style="text-align: center;">Perfil del Usuario</h2>
+
+      <label for="usuarioNombre"><strong>Nombre de Usuario</strong></label>
+      <input type="text" id="usuarioNombre" placeholder="Ingrese su nombre" style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc;">
+
+      <label for="usuarioDocumento"><strong>Documento Legal / ID REPROCANN</strong></label>
+      <input type="text" id="usuarioDocumento" placeholder="12345678 o código REPROCANN" style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc;">
+
+      <label for="usuarioFoto"><strong>Foto de Perfil</strong></label>
+      <input type="file" id="usuarioFoto" accept="image/*" onchange="previsualizarFoto()" style="margin: 8px 0;">
+      <div style="text-align: center;">
+        <img id="fotoPreview" src="" alt="Sin imagen" style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%; margin-top: 10px; display: none; border: 2px solid #ccc;">
+      </div>
+
+      <button onclick="guardarPerfil()" style="margin-top: 20px; width: 100%; padding: 10px; background-color: #aaff00; border: none; font-weight: bold; border-radius: 6px; cursor: pointer;">Guardar Perfil</button>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <button onclick="germinarPlanta()">🌱 Germinar</button>
+      <button onclick="activarModoCorte()">✂️ Cortar</button>
+      <button onclick="cortarTodo()">🗑️ Cortar Todo</button>
+    </div>
+
+    <div class="menu-catalogo" id="menuCatalogo">
+      <p id="nombreProducto"></p>
+      <button onclick="modificarCantidad(-1)">-</button>
+      <input type="text" id="cantidadProducto" value="1">
+      <button onclick="modificarCantidad(1)">+</button>
+      <button onclick="agregarAlCarrito()">Añadir al Carrito</button>
+      <button onclick="cerrarMenuCatalogo()">Cerrar</button>
+    </div>
+
+    <div class="menu-cultivo" id="menuCultivo">
+      <h3>Ficha Técnica de Cultivo</h3>
+      <table id="tablaFicha" border="1" style="margin: auto; width: 600px; max-height: 450px;">
+        <tr><th>Parámetro</th><th>Valor</th></tr>
+        <tr><td>Nombre de la Planta</td><td contenteditable="true" id="nombrePlantaCelda">Planta</td></tr>
+        <tr><td>Fecha de siembra o clonación</td><td contenteditable="true"></td></tr>
+        <tr><td>Tipo de genotipo</td><td contenteditable="true"></td></tr>
+        <tr><td>Etapa fenológica</td><td contenteditable="true"></td></tr>
+        <tr><td>Altura de la planta (cm)</td><td contenteditable="true"></td></tr>
+        <tr><td>Diámetro del tallo (mm)</td><td contenteditable="true"></td></tr>
+        <tr><td>Número de hojas desarrolladas</td><td contenteditable="true"></td></tr>
+        <tr><td>Presencia de estructuras florales (Sí/No)</td><td contenteditable="true"></td></tr>
+        <tr><td>Observaciones sobre vigor y tasa de crecimiento</td><td contenteditable="true"></td></tr>
+        <tr><td>Coloración foliar</td><td contenteditable="true"></td></tr>
+        <tr><td>Turgencia y firmeza del tallo</td><td contenteditable="true"></td></tr>
+        <tr><td>Densidad de la biomasa aérea y radicular</td><td contenteditable="true"></td></tr>
+        <tr><td>Número y tamaño de los foliolos</td><td contenteditable="true"></td></tr>
+        <tr><td>Presencia de tricomas glandulares</td><td contenteditable="true"></td></tr>
+        <tr><td>Patrones de ramificación</td><td contenteditable="true"></td></tr>
+        <tr><td>Tasa de fotosíntesis</td><td contenteditable="true"></td></tr>
+        <tr><td>Conductancia estomática</td><td contenteditable="true"></td></tr>
+        <tr><td>Metabolitos secundarios (THC, CBD, terpenos)</td><td contenteditable="true"></td></tr>
+        <tr><td>Presencia de plagas o enfermedades</td><td contenteditable="true"></td></tr>
+        <tr><td>Signos de estrés ambiental (quemaduras, clorosis, necrosis)</td><td contenteditable="true"></td></tr>
+        <tr><td>Análisis de deficiencias nutricionales</td><td contenteditable="true"></td></tr>
+        <tr><td>Peso seco y fresco de la biomasa producida</td><td contenteditable="true"></td></tr>
+        <tr><td>Relación hoja/flor</td><td contenteditable="true"></td></tr>
+        <tr><td>Contenido de cannabinoides y terpenos</td><td contenteditable="true"></td></tr>
+      </table>
+
+      <br>
+      <input type="text" id="nombreArchivo" placeholder="Nombre del archivo" style="width: 200px;">
+      <button onclick="descargarFicha()">Descargar Ficha</button>
+      <button onclick="cerrarMenuCultivo()">Cerrar</button>
+    </div>
+
+    <div id="terminos" style="display: none; position: absolute; top: 150px; left: 50%; transform: translateX(-50%); width: 80%; max-height: 70vh; overflow-y: auto; background: rgba(255,255,255,0.95); padding: 30px; border-radius: 12px; font-family: Arial, sans-serif; font-size: 1rem; line-height: 1.6; color: #222; box-shadow: 0 0 10px rgba(0,0,0,0.2);">
+      <h2 style="text-align: center;">Términos y Condiciones de Uso de la Plataforma Cultivo Virtual</h2>
+
+      <p><strong>1. Aceptación de los Términos</strong><br>
+      Al utilizar la Plataforma, el Usuario declara haber leído, comprendido y aceptado los presentes Términos y Condiciones, los cuales tienen carácter contractual y vinculante.</p>
+
+      <p><strong>2. Objeto y Alcance</strong><br>
+      La Plataforma está destinada exclusivamente al seguimiento técnico de cultivos personales de Cannabis sativa L., así como al registro de productos derivados de la propia cosecha del Usuario, sin fines de comercialización masiva.</p>
+
+      <p><strong>3. Cumplimiento Normativo</strong><br>
+      El Usuario declara cumplir con la normativa vigente de la República Argentina, en particular:
+        <ul>
+          <li><strong>INASE</strong>: Uso de semillas registradas o declaradas conforme Resolución 260/2022.</li>
+          <li><strong>ARICAME</strong>: Cumplimiento de la Ley 27.669 y uso exclusivo bajo licencias o inscripciones válidas.</li>
+          <li><strong>Gobierno Nacional y Provincial</strong>: Respeto a controles sanitarios, fitosanitarios y de seguridad aplicables.</li>
+        </ul>
+      </p>
+
+      <p><strong>4. Protección de Datos</strong><br>
+      Los datos técnicos ingresados por el Usuario serán tratados conforme la Ley 25.326 de Protección de Datos Personales. Ningún dato será cedido sin autorización legal.</p>
+
+      <p><strong>5. Limitaciones de Uso</strong><br>
+      Se prohíbe:
+        <ul>
+          <li>Ingresar información falsa o cultivos de terceros.</li>
+          <li>Usar la plataforma para fines comerciales no autorizados.</li>
+          <li>Publicar contenido que promueva tráfico o actividades ilícitas.</li>
+        </ul>
+      </p>
+
+      <p><strong>6. Responsabilidad del Usuario</strong><br>
+      El Usuario declara ser el único responsable por los datos registrados, que deberán referirse únicamente a cultivos personales legales y autorizados.</p>
+
+      <p><strong>7. Responsabilidad del Desarrollador</strong><br>
+      El desarrollador de la Plataforma no será responsable por el uso indebido de la misma ni por las consecuencias legales derivadas de la falsedad de datos ingresados por los Usuarios.</p>
+
+      <p><strong>8. Modificaciones</strong><br>
+      La Plataforma podrá actualizar estos Términos y publicarlos para su nueva aceptación por parte de los Usuarios.</p>
+
+      <p><strong>9. Jurisdicción y Ley Aplicable</strong><br>
+      Se regirá por las leyes de la República Argentina. Toda controversia será sometida a la jurisdicción de los tribunales ordinarios competentes.</p>
+
+      <p><strong>10. Declaración de Consentimiento</strong><br>
+      Al continuar utilizando la Plataforma, el Usuario acepta expresamente estos Términos y Condiciones.</p>
+
+      <p style="text-align: center; margin-top: 20px;"><em>Última actualización: junio 2025</em></p>
+    </div>
+
+  </div> <!-- fin dashboard -->
+
+<script>
+/* Datos y estado */
+const fichasPorPlanta = {}; // { "Planta 1": [ ["Parámetro", "Valor"], ... ] }
+let plantaActual = null; // planta que se está visualizando
+let productoActual = '';
+let carritoItems = [];
+
+const productos = [
+  { nombre: 'FLOR C', descripcion: 'Flor compacta de aroma cítrico.', precio: 5000, imagen: 'flor-c.jpg' },
+  { nombre: 'FLOR B', descripcion: 'Flor resinosa de efecto relajante.', precio: 8000, imagen: 'flor-b.jpg' },
+  { nombre: 'FLOR A', descripcion: 'Flor premium con alto THC.', precio: 10000, imagen: 'flor-a.jpg' },
+  { nombre: 'FLOR S', descripcion: 'Flor con sabor dulce e intenso.', precio: 12000, imagen: 'flor-s.jpg' },
+  { nombre: 'BROWNIE', descripcion: 'Brownie artesanal con extracto.', precio: 6000, imagen: 'brownie.jpg' },
+  { nombre: 'CHOCOCO', descripcion: 'Dulce de cannabis con coco.', precio: 4000, imagen: 'chococo.jpg' },
+  { nombre: 'BLUNT X 4 UN', descripcion: 'Pack de 4 blunts aromáticos.', precio: 25000, imagen: 'blunt.jpg' },
+  { nombre: 'LUBRICANTE', descripcion: 'Lubricante íntimo cannábico.', precio: 10000, imagen: 'lubricante.jpg' },
+  { nombre: 'ACEITE', descripcion: 'Aceite medicinal de espectro completo.', precio: 10000, imagen: 'aceite.jpg' },
+  { nombre: 'TINTURA', descripcion: 'Tintura sublingual calmante.', precio: 10000, imagen: 'tintura.jpg' },
+  { nombre: 'SEMILLA X 3 UN', descripcion: 'Pack de 3 semillas feminizadas.', precio: 15000, imagen: 'semilla3.jpg' },
+  { nombre: 'SEMILLA X 10 UN', descripcion: 'Pack de 10 semillas premium.', precio: 30000, imagen: 'semilla10.jpg' }
+];
+
+/* Autenticación (muy simple, sin servidor) */
+function login() {
+  const user = document.getElementById("username").value;
+  const pass = document.getElementById("password").value;
+  if (user && pass) {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("dashboard").style.display = "flex";
+    cargarCatalogo();
+    // asegurar que el estado guardado se muestre
+    actualizarCarrito();
+  } else {
+    alert("Por favor, completa ambos campos.");
+  }
+}
+
+function logout() {
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("login").style.display = "flex";
+}
+
+/* Navegación de secciones */
+function mostrarSeccion(seccion) {
+  // ocultar todas las secciones relevantes
+  document.querySelectorAll('.grid-section, #terminos, #perfil, #mainText, #carrito, #menuCatalogo, #menuCarrito, #menuCultivo').forEach(e => {
+    if (e) e.style.display = 'none';
+  });
+
+  if (seccion === 'catalogo') {
+    document.getElementById('catalogoGrid').style.display = 'flex';
+    document.getElementById('carrito').style.display = 'block';
+    document.body.style.backgroundImage = "url('fondo-catalogo-vitrina.png')";
+  } else if (seccion === 'cultivo') {
+    document.getElementById('cultivoGrid').style.display = 'flex';
+    document.body.style.backgroundImage = "url('fondo-mi-cultivo-indoor.png')";
+  } else if (seccion === 'terminos') {
+    document.getElementById('terminos').style.display = 'block';
+    document.body.style.backgroundImage = "url('fondo-cultivo-realista.jpg')";
+  } else if (seccion === 'perfil') {
+    document.getElementById('perfil').style.display = 'block';
+    document.body.style.backgroundImage = "url('fondo-cultivo-realista.jpg')";
+  } else {
+    document.getElementById('mainText').style.display = 'flex';
+    document.body.style.backgroundImage = "url('fondo-cultivo-realista.jpg')";
+  }
+}
+
+/* Catálogo: renderizar productos */
+function cargarCatalogo() {
+  const grid = document.getElementById("catalogoGrid");
+  grid.innerHTML = "";
+  productos.forEach((p, i) => {
+    const boton = document.createElement("button");
+    boton.className = "producto-boton";
+    // mostrar el nombre del producto (no el índice)
+    boton.innerHTML = `<img src="${p.imagen}" onerror="this.src='placeholder.jpg'" alt="${p.nombre}"><div class="nombre-producto">${p.nombre}</div>`;
+    boton.onclick = () => mostrarMenuCatalogo(i);
+    grid.appendChild(boton);
+  });
+}
+
+/* Menu de producto (cantidad, añadir) */
+function mostrarMenuCatalogo(index) {
+  const producto = productos[index];
+  productoActual = producto.nombre;
+  document.getElementById("nombreProducto").innerHTML = `
+    <h3>${producto.nombre}</h3>
+    <img src="${producto.imagen}" onerror="this.src='placeholder.jpg'" style="width: 120px;"><br>
+    <p>${producto.descripcion}</p>
+    <strong>Precio: $${producto.precio.toLocaleString()}</strong>
+  `;
+  document.getElementById("cantidadProducto").value = 1;
+  document.getElementById("menuCatalogo").style.display = "block";
+}
+
+/* Cantidad */
+function modificarCantidad(valor) {
+  let input = document.getElementById("cantidadProducto");
+  let cantidad = parseInt(input.value) || 1;
+  cantidad = Math.max(1, cantidad + valor);
+  input.value = cantidad;
+}
+
+/* Carrito */
+function agregarAlCarrito() {
+  let cantidad = parseInt(document.getElementById("cantidadProducto").value) || 1;
+  carritoItems.push({ producto: productoActual, cantidad });
+  actualizarCarrito();
+  cerrarMenuCatalogo();
+  // guardar en localStorage
+  localStorage.setItem('carritoItems', JSON.stringify(carritoItems));
+}
+
+function actualizarCarrito() {
+  let totalCantidad = 0;
+  let totalPrecio = 0;
+
+  carritoItems.forEach(item => {
+    const producto = productos.find(p => p.nombre === item.producto);
+    if (producto) {
+      totalCantidad += item.cantidad;
+      totalPrecio += item.cantidad * producto.precio;
+    }
+  });
+
+  const carritoEl = document.getElementById("carrito");
+  carritoEl.innerText = `🛒 ${totalCantidad} prod. - $${totalPrecio.toLocaleString()}`;
+  // mostrar u ocultar botón carrito según si estamos en catálogo o no (se deja oculto hasta que se muestre catálogo)
+  // si hay items, mostrarlo para que el usuario lo vea
+  if (totalCantidad > 0) carritoEl.style.display = 'block';
+}
+
+function mostrarCarrito() {
+  let lista = "";
+  let totalCantidad = 0;
+  let totalPrecio = 0;
+
+  carritoItems.forEach((item, index) => {
+    const producto = productos.find(p => p.nombre === item.producto);
+    if (producto) {
+      const subtotal = producto.precio * item.cantidad;
+      totalCantidad += item.cantidad;
+      totalPrecio += subtotal;
+      lista += `<p>${item.producto} x${item.cantidad} = $${subtotal.toLocaleString()} 
+        <button onclick="eliminarDelCarrito(${index})">Eliminar</button></p>`;
+    }
+  });
+
+  lista += `<hr><p><strong>Total (${totalCantidad} productos): $${totalPrecio.toLocaleString()}</strong></p>`;
+  lista += `<button onclick="vaciarCarrito()">Vaciar Carrito</button>`;
+
+  document.getElementById("menuCarrito").innerHTML = `<h3>Carrito de Compras</h3>${lista}<button onclick='cerrarMenuCarrito()'>Cerrar</button>`;
+  document.getElementById("menuCarrito").style.display = "block";
+}
+
+function eliminarDelCarrito(index) {
+  carritoItems.splice(index, 1);
+  actualizarCarrito();
+  mostrarCarrito();
+  localStorage.setItem('carritoItems', JSON.stringify(carritoItems));
+}
+
+function vaciarCarrito() {
+  carritoItems = [];
+  actualizarCarrito();
+  cerrarMenuCarrito();
+  localStorage.removeItem('carritoItems');
+}
+
+function cerrarMenuCarrito() {
+  document.getElementById("menuCarrito").style.display = "none";
+}
+
+function cerrarMenuCatalogo() {
+  document.getElementById("menuCatalogo").style.display = "none";
+}
+
+/* --- Fichas de cultivo --- */
+/* función única y definitiva para mostrar ficha (no duplicada) */
+function mostrarFichaCultivo(nombre) {
+  plantaActual = nombre;
+  document.getElementById("menuCultivo").style.display = "block";
+  const tabla = document.getElementById("tablaFicha");
+
+  // Si no hay ficha previa, inicializar con estructura vacía
+  if (!fichasPorPlanta[nombre]) {
+    const filas = Array.from(tabla.querySelectorAll("tr")).slice(1);
+    fichasPorPlanta[nombre] = filas.map(fila => {
+      const celdas = fila.querySelectorAll("td");
+      return [celdas[0].innerText, ""]; // parámetro, valor vacío
+    });
+  }
+
+  // Cargar datos en la tabla (valor guardado)
+  const filas = Array.from(tabla.querySelectorAll("tr")).slice(1);
+  fichasPorPlanta[nombre].forEach((filaData, i) => {
+    const celdas = filas[i].querySelectorAll("td");
+    if (celdas[0]) celdas[0].innerText = filaData[0]; // parámetro
+    if (celdas[1]) celdas[1].innerText = filaData[1]; // valor editable
+  });
+
+  document.getElementById("nombrePlantaCelda").innerText = nombre;
+}
+
+function guardarEstadoCultivo() {
+  const botones = document.querySelectorAll("#cultivoGrid .planta-boton img");
+  const nombres = Array.from(botones).map(b => b.alt || b.getAttribute('alt') || 'Planta');
+
+  // Guardar nombres de las plantas
+  localStorage.setItem("plantasCultivo", JSON.stringify(nombres));
+
+  // Guardar fichas técnicas de cada planta
+  localStorage.setItem("fichasCultivo", JSON.stringify(fichasPorPlanta));
+}
+
+function cargarEstadoCultivo() {
+  const dataPlantas = localStorage.getItem("plantasCultivo");
+  const dataFichas = localStorage.getItem("fichasCultivo");
+  const dataCarrito = localStorage.getItem("carritoItems");
+
+  // cargar carrito guardado
+  if (dataCarrito) {
+    try {
+      carritoItems = JSON.parse(dataCarrito) || [];
+    } catch(e) { carritoItems = []; }
+  }
+
+  // cargar fichas guardadas
+  if (dataFichas) {
+    try {
+      const fichas = JSON.parse(dataFichas);
+      Object.keys(fichas).forEach(nombre => {
+        fichasPorPlanta[nombre] = fichas[nombre];
+      });
+    } catch(e) { /* noop */ }
+  }
+
+  // cargar plantas guardadas o inicializar dos plantas
+  if (dataPlantas) {
+    try {
+      const nombres = JSON.parse(dataPlantas);
+      nombres.forEach(nombre => agregarBotonPlanta(nombre));
+      plantasCultivo = nombres.length;
+    } catch(e) {
+      plantasCultivo = 0;
+    }
+  } else {
+    // inicializar con 2 plantas
+    for (let i = 1; i <= 2; i++) {
+      agregarBotonPlanta(`Planta ${i}`);
+    }
+    plantasCultivo = 2;
+  }
+
+  // actualizar vista del carrito en caso de que haya items
+  actualizarCarrito();
+}
+
+/* Cerrar menu cultivo guardando los datos en fichasPorPlanta */
+function cerrarMenuCultivo() {
+  if (!plantaActual) return;
+  const tabla = document.getElementById("tablaFicha");
+  const filas = Array.from(tabla.querySelectorAll("tr")).slice(1);
+
+  fichasPorPlanta[plantaActual] = filas.map(fila => {
+    const celdas = fila.querySelectorAll("td");
+    return [celdas[0].innerText, celdas[1].innerText];
+  });
+
+  document.getElementById("menuCultivo").style.display = "none";
+  plantaActual = null;
+
+  guardarEstadoCultivo();
+}
+
+/* Descargar ficha (CSV) */
+function descargarFicha() {
+  const filas = document.querySelectorAll("#tablaFicha tr");
+  let csv = "";
+  filas.forEach(fila => {
+    const celdas = fila.querySelectorAll("td, th");
+    const filaTexto = Array.from(celdas).map(celda => `"${(celda.innerText || '').replace(/"/g,'""')}"`).join(",");
+    csv += filaTexto + "\n";
+  });
+
+  let nombreArchivo = document.getElementById("nombreArchivo").value.trim() || "ficha_cultivo";
+  if (!nombreArchivo.toLowerCase().endsWith(".csv")) {
+    nombreArchivo += ".csv";
+  }
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = nombreArchivo;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* Gestión de plantas (UI) */
+let plantasCultivo = 2;
+let modoCorte = false;
+
+window.addEventListener('DOMContentLoaded', () => {
+  // cargar estado guardado (plantas, fichas, carrito)
+  cargarEstadoCultivo();
+  // cargar perfil de usuario
+  cargarPerfil();
+  // mostrar main text por defecto (login aún visible hasta login)
+  document.getElementById('mainText').style.display = 'flex';
+});
+
+function germinarPlanta() {
+  plantasCultivo++;
+  agregarBotonPlanta(`Planta ${plantasCultivo}`);
+  guardarEstadoCultivo();
+}
+
+function agregarBotonPlanta(nombre) {
+  const grid = document.getElementById("cultivoGrid");
+  const boton = document.createElement("button");
+  boton.className = "planta-boton";
+  boton.innerHTML = `<img src="PlantaCultivo.png" alt="${nombre}">`;
+  boton.onclick = () => {
+    if (modoCorte) {
+      if (confirm(`¿Cortar ${nombre}?`)) {
+        boton.remove();
+        guardarEstadoCultivo();
+      }
+    } else {
+      mostrarFichaCultivo(nombre);
+    }
+  };
+  grid.appendChild(boton);
+}
+
+function activarModoCorte() {
+  modoCorte = !modoCorte;
+  alert(modoCorte ? "Modo corte activado: haz clic en una planta para cortarla." : "Modo corte desactivado.");
+}
+
+function cortarTodo() {
+  const grid = document.getElementById("cultivoGrid");
+  if (grid.children.length === 0) {
+    alert("No hay plantas que cortar.");
+    return;
+  }
+  if (confirm("¿Estás seguro de que querés cortar TODAS las plantas?")) {
+    grid.innerHTML = "";
+    plantasCultivo = 0;
+    modoCorte = false;
+    guardarEstadoCultivo();
+  }
+}
+
+/* Perfil: previsualizar y guardar */
+function previsualizarFoto() {
+  const input = document.getElementById("usuarioFoto");
+  const preview = document.getElementById("fotoPreview");
+  const file = input.files[0];
+
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      preview.src = e.target.result;
+      preview.style.display = "block";
+      localStorage.setItem("perfil_foto", e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function guardarPerfil() {
+  const nombre = document.getElementById("usuarioNombre").value.trim();
+  const documento = document.getElementById("usuarioDocumento").value.trim();
+
+  if (nombre && documento) {
+    localStorage.setItem("perfil_nombre", nombre);
+    localStorage.setItem("perfil_documento", documento);
+    alert("Perfil guardado correctamente.");
+  } else {
+    alert("Por favor, completá todos los campos obligatorios.");
+  }
+}
+
+function cargarPerfil() {
+  const nombre = localStorage.getItem("perfil_nombre");
+  const documento = localStorage.getItem("perfil_documento");
+  const foto = localStorage.getItem("perfil_foto");
+
+  if (nombre) document.getElementById("usuarioNombre").value = nombre;
+  if (documento) document.getElementById("usuarioDocumento").value = documento;
+  if (foto) {
+    const preview = document.getElementById("fotoPreview");
+    preview.src = foto;
+    preview.style.display = "block";
+  }
+}
+</script>
+</body>
+</html>
